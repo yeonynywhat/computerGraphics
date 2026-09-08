@@ -30,6 +30,7 @@ ISS는 데모 모형의 전체 x축 길이가 5.2단위이므로, 대표 길이 
 
 또한 맨 왼쪽의 공전 회전이 위치와 방향을 함께 회전시키므로, 공전 중에도 지구를 향하는 방향이 유지된다. 행렬은 오른쪽부터 적용되므로 크기 조절 → 방향 보정 → 궤도 거리로 이동 → 공전 순서로 작동한다. 두 공전 속도는 실제 공전주기가 아니라 실습에서 움직임을 확인하기 위한 값이다.
 
+https://cg.catholic.ac.kr/~mgchoi/CG/demos/d02-transform-lab.html?d=eyJyYW5nZSI6eyJ4IjoiNjUiLCJ5IjoiNjUiLCJ6IjoiNjUifSwib2JqZWN0cyI6W3siaWQiOiJlYXJ0aCIsIm5hbWUiOiLsp4DqtawiLCJjb2xvciI6WzAuMzUsMC42LDAuOTVdLCJzdGVwcyI6W119LHsiaWQiOiJtb29uIiwibmFtZSI6IuuLrCIsImNvbG9yIjpbMC43OCwwLjc4LDAuODJdLCJzdGVwcyI6W3sidHlwZSI6IlJ6IiwiYXJncyI6WyJ0KjIwIl19LHsidHlwZSI6IlQiLCJhcmdzIjpbIjM4NDQwMC82MzcxIiwiMCIsIjAiXX0seyJ0eXBlIjoiUnoiLCJhcmdzIjpbIjE4MCJdfSx7InR5cGUiOiJTdSIsImFyZ3MiOlsiMTczNy40LzYzNzEiXX0seyJ0eXBlIjoiVCIsImFyZ3MiOlsiMCIsIjAiLCIwIl19XX0seyJpZCI6InNhdCIsIm5hbWUiOiLsnbjqs7XsnITshLEiLCJjb2xvciI6WzAuOTUsMC43MiwwLjM1XSwic3RlcHMiOlt7InR5cGUiOiJSeiIsImFyZ3MiOlsidCo0MCJdfSx7InR5cGUiOiJUIiwiYXJncyI6WyIoNjM3MSs0MDApLzYzNzEiLCIwIiwiMCJdfSx7InR5cGUiOiJSeiIsImFyZ3MiOlsiMTgwIl19LHsidHlwZSI6IlN1IiwiYXJncyI6WyIxMDkvKDYzNzEwMDAqNS4yKSJdfV19XX0%3D
 
 Task 2 — NDC 범위에 맞추기
 
