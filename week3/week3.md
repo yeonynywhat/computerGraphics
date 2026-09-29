@@ -106,15 +106,20 @@ const model = M4.multiply(
 
 **비교 캡처**
 
-[변경 전 캡처 삽입]
+<img width="1512" height="868" alt="task1_1" src="https://github.com/user-attachments/assets/0ff79b7b-27b9-4039-a641-e123d3698ab0" />
 
-[변경 후 캡처 삽입]
+
+<img width="1512" height="868" alt="task1_2" src="https://github.com/user-attachments/assets/4448fa40-dffe-4870-8c91-a9b86859785b" />
+
 
 ### 3.4. 프래그먼트 셰이더 변경 실험
 
 - 선택한 실습실 예제: [예제 이름]
 - 변경한 프래그먼트 셰이더 전체 코드: [실제 사용한 FS_SOURCE 안의 GLSL 코드 삽입]
-- 실행 화면: [캡처 삽입]
+- 실행 화면
+
+![Uploading task1_3.png…]()
+
 
 **관찰 결과와 원리**
 
