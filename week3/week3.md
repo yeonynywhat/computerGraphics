@@ -118,7 +118,7 @@ const model = M4.multiply(
 - 변경한 프래그먼트 셰이더 전체 코드: [실제 사용한 FS_SOURCE 안의 GLSL 코드 삽입]
 - 실행 화면
 
-![Uploading task1_3.png…]()
+<img width="1512" height="869" alt="task1_3" src="https://github.com/user-attachments/assets/f01e61b7-8d8e-4d0e-b124-f5743803e198" />
 
 
 **관찰 결과와 원리**
