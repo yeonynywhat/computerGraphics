@@ -10,7 +10,8 @@
 ## 2. 실행 링크
 
 - 실습 1: [task1.html 실행](https://yeonynywhat.github.io/computerGraphics/week3/task1.html)
-- 실습 2: [task2.html 실행]()
+- 실습 2: [task2.html 실행](https://yeonynywhat.github.io/computerGraphics/week3/task2.html)
+- 실습 2-1 : [task3.html 실행](https://yeonynywhat.github.io/computerGraphics/week3/task3.html)
 
 ## 3. 실습 1 — 바닥 위에 떠서 회전하는 공
 
@@ -206,7 +207,8 @@ vec3 emission = vec3(0.10, 0.65, 1.0) * crack * strength;
 `crack`을 곱하므로 균열 부분에만 발광이 생기고, 모든 균열이 같은 시간 위상으로 밝아졌다 어두워진다.
 잡음 좌표에는 시간을 넣지 않아 무늬는 고정하고 밝기만 변화시켰다.
 
-![얼음 행성의 극관과 균열](images/ice.png)
+<img width="1490" height="741" alt="스크린샷 2026-09-30 오후 2 56 25" src="https://github.com/user-attachments/assets/d0701e05-3e62-4a8a-93c2-0c26775a3d4e" />
+
 
 제공한 캡처에서는 하얀 극관과 푸른 표면 위로 불규칙한 균열이 이어지는 모습을 볼 수 있다.
 이 정지 화면만으로는 발광의 시간 변화를 비교할 수 없으며, 맥동은 실행 화면에서 확인해야 한다.
@@ -253,7 +255,8 @@ vec3 emission = lavaColor * lava * (0.25 + 0.35 * pulse);
 발광 계수는 0.25~0.60이고, `lava`를 곱하므로 주로 용암 영역에서 빛이 난다.
 표면 무늬 자체가 흐르는 유체 시뮬레이션은 아니며, 고정된 무늬의 밝기가 변하는 효과이다.
 
-![용암 행성의 암석과 붉고 노란 용암](images/lava.png)
+<img width="1511" height="836" alt="스크린샷 2026-09-30 오후 2 59 41" src="https://github.com/user-attachments/assets/f5d481ab-82f1-4b43-86b6-e67967fb678b" />
+
 
 캡처에서 검은 암석과 붉고 노란 용암 영역이 구분된다. 얼음 행성의 가느다란 균열과 달리 넓게 분포한 발광 영역이 특징이다.
 
@@ -288,8 +291,8 @@ JavaScript에서 경과 시간을 `uTime`으로 전달하고, 모델 행렬의 `
 
 ### 4.7. 실행 주소
 
-- 얼음 행성 GitHub Pages 주소: **[배포 후 실제 주소 입력]**
-- 용암 행성 GitHub Pages 주소: **[배포 후 실제 주소 입력]**
+- 얼음 행성 실행 주소 : [task2.html 실행](https://yeonynywhat.github.io/computerGraphics/week3/task2.html)
+- 용암 행성 실행 주소 : [task3.html 실행](https://yeonynywhat.github.io/computerGraphics/week3/task3.html)
 
 ### 4.8. 프래그먼트 셰이더 전체 코드
 
