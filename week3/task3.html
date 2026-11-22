@@ -238,7 +238,7 @@
 
         void main() {
           vec3 N = normalize(vNormal);
-          vec3 L = normalize(vec3(0.45, 0.8, 0.35));
+          vec3 L = normalize(vec3(1.0, 0.35, 0.0)); // 빛을 카메라 기준 오른쪽 옆에서 비춰 낮밤 경계가 화면 가운데쯤 보이게
           float diff = max(dot(N, L), 0.0);
 
           if (uIsPlanet == 1) {
@@ -251,7 +251,7 @@
             // 용암 지대 안에서도 깊은 부분을 더 뜨거운 색으로 표현
             float hot = 1.0 - smoothstep(0.28, 0.43, h);
 
-            vec3 rockColor = vec3(0.07, 0.045, 0.04);
+            vec3 rockColor = vec3(0.30, 0.22, 0.19); // 0.07 → 0.30: 너무 검으면 빛을 받아도 밝아지지 않아 낮밤 경계가 안 보였음
             vec3 lavaColor = mix(
               vec3(0.80, 0.07, 0.01),
               vec3(1.0, 0.65, 0.08),
@@ -499,7 +499,7 @@
         return { vao: vao, count: mesh.indices.length };
       }
 
-      const planet = createMesh(makeSphere(1.3, 64, 128, 1.0, 1.0, 1.0)); // 얼음 행성
+      const planet = createMesh(makeSphere(1.3, 64, 128, 1.0, 1.0, 1.0)); // 용암 행성
       const floor = createMesh(makeBox(8.0, 0.12, 8.0, 0.42, 0.5, 0.62)); // 아주 납작한 상자 = 바닥
 
       /* ══════════════════════════════════════════════════════════════════════════
@@ -529,8 +529,8 @@
         // ── 카메라 ─────────────────────────────────────────────────────
         let camera = M4.identity();
 
-        // ① 보고 싶은 지점을 원점으로 끌어온다
-        camera = M4.multiply(M4.translate(0, -1.1, 0), camera);
+        // ① 보고 싶은 지점(행성 중심 y = 1.9)을 원점으로 끌어온다 — 행성이 화면 가운데에 오도록
+        camera = M4.multiply(M4.translate(0, -1.9, 0), camera);
 
         // ② 세계를 좌우로 돌린다 (카메라가 옆으로 도는 것과 같다)
         camera = M4.multiply(M4.rotateY(-0.62), camera);
@@ -565,7 +565,7 @@
 
         // ⑥ 보이는 공간을 -1 ~ 1 로 줄인다 (그냥 크기 조절입니다)
         camera = M4.multiply(
-          M4.scale(1 / (3.4 * aspect), 1 / 3.4, -1 / 30),
+          M4.scale(1 / (1.8 * aspect), 1 / 1.8, -1 / 30), // 3.4 → 1.8: 보이는 범위를 좁혀 행성을 크게
           camera,
         );
 

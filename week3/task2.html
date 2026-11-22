@@ -238,7 +238,7 @@
 
         void main() {
           vec3 N = normalize(vNormal);
-          vec3 L = normalize(vec3(0.45, 0.8, 0.35));
+          vec3 L = normalize(vec3(1.0, 0.35, 0.0)); // 빛을 카메라 기준 오른쪽 옆에서 비춰 낮밤 경계가 화면 가운데쯤 보이게
           float diff = max(dot(N, L), 0.0);
 
           if (uIsPlanet == 1) {
@@ -249,7 +249,9 @@
             vec3 iceColor = vec3(0.88, 0.96, 1.0);
             float polar = smoothstep(0.6, 0.8, abs(S.y));
             vec3 surfaceColor = mix(baseColor, iceColor, polar);
-            surfaceColor = mix(surfaceColor, vec3(0.005, 0.055, 0.075), crack);
+            // 균열 색: 어두운 파란 표면 위에서는 밝은 청록, 하얀 극관 위에서는 짙은 색 → 어디서나 바탕과 대비
+            vec3 crackColor = mix(vec3(0.45, 0.85, 1.0), vec3(0.005, 0.055, 0.075), polar);
+            surfaceColor = mix(surfaceColor, crackColor, crack);
             float pulse = 0.5 + 0.5 * sin(uTime * 1.5);
             float strength = 0.08 + 0.22 * pulse;
             vec3 emission = vec3(0.10, 0.65, 1.0) * crack * strength;
@@ -520,8 +522,8 @@
         // ── 카메라 ─────────────────────────────────────────────────────
         let camera = M4.identity();
 
-        // ① 보고 싶은 지점을 원점으로 끌어온다
-        camera = M4.multiply(M4.translate(0, -1.1, 0), camera);
+        // ① 보고 싶은 지점(행성 중심 y = 1.9)을 원점으로 끌어온다 — 행성이 화면 가운데에 오도록
+        camera = M4.multiply(M4.translate(0, -1.9, 0), camera);
 
         // ② 세계를 좌우로 돌린다 (카메라가 옆으로 도는 것과 같다)
         camera = M4.multiply(M4.rotateY(-0.62), camera);
@@ -556,7 +558,7 @@
 
         // ⑥ 보이는 공간을 -1 ~ 1 로 줄인다 (그냥 크기 조절입니다)
         camera = M4.multiply(
-          M4.scale(1 / (3.4 * aspect), 1 / 3.4, -1 / 30),
+          M4.scale(1 / (1.8 * aspect), 1 / 1.8, -1 / 30), // 3.4 → 1.8: 보이는 범위를 좁혀 행성을 크게
           camera,
         );
 
