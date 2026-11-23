@@ -23,6 +23,8 @@
 
   const poiList = document.createElement("div");
   poiList.className = "actions";
+  // 버튼 6개가 한 줄에 들어가면 글자가 세로로 쪼개져 읽기 어려워서 2열 격자로 배치합니다.
+  poiList.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:6px";
 
   const poiModeList = document.createElement("div");
   poiModeList.className = "actions";
@@ -358,6 +360,118 @@
     comparisonList.appendChild(button);
   }
 
+  // ── 가림 숨기기: 위층을 잘라 내거나 칸막이·뒷벽을 숨겨 안쪽 장치를 보이게 합니다.
+  //    모델 데이터는 바꾸지 않고, 렌더러의 hidden 집합에 상자·명판 id를 넣어 그리지 않을 뿐입니다.
+  const MAIN_BUILDING_HALF_X = 6.5; // 본관(폭 12m) 범위만 자르고, 다리·별관·비교 대상은 그대로 둡니다.
+  const floorCuts = [
+    { id: "all", label: "전체 층", cutY: Infinity },
+    { id: "f2", label: "2층까지", cutY: 6 },
+    { id: "f1", label: "1층만", cutY: 3 },
+  ];
+  const wallGroups = {
+    partition: { label: "칸막이", test: (id) => id.startsWith("partition-") },
+    back: { label: "뒷벽", test: (id) => id.startsWith("back-") },
+  };
+  let floorCut = floorCuts[0];
+  const hiddenWalls = new Set();
+
+  function partBottom(part) {
+    return part.position[1] - part.size[1] / 2;
+  }
+  function inMainBuilding(position) {
+    return Math.abs(position[0]) <= MAIN_BUILDING_HALF_X;
+  }
+  function isComparisonPart(part) {
+    return String(part.group).startsWith("comparison");
+  }
+
+  function applyHiding() {
+    viewer.hidden.clear();
+    for (const part of viewer.model.boxes) {
+      if (isComparisonPart(part)) continue;
+      const aboveCut =
+        inMainBuilding(part.position) && partBottom(part) >= floorCut.cutY - 0.1;
+      const wallHidden = [...hiddenWalls].some((key) =>
+        wallGroups[key].test(part.id),
+      );
+      if (aboveCut || wallHidden) viewer.hidden.add(part.id);
+    }
+    // 잘린 층에 붙은 명판도 함께 숨겨 공중에 떠 보이지 않게 합니다.
+    for (const sign of viewer.model.signs) {
+      if (isComparisonPart(sign)) continue;
+      if (inMainBuilding(sign.position) && sign.position[1] >= floorCut.cutY)
+        viewer.hidden.add(sign.id);
+    }
+    updateHideStatus();
+  }
+
+  const hideHeading = document.createElement("h2");
+  hideHeading.textContent = "가림 숨기기";
+  const hideStatus = document.createElement("p");
+  hideStatus.setAttribute("aria-live", "polite");
+  const floorList = document.createElement("div");
+  floorList.className = "actions";
+  const wallList = document.createElement("div");
+  wallList.className = "actions";
+  const restoreButton = document.createElement("button");
+  restoreButton.className = "btn";
+  restoreButton.type = "button";
+  restoreButton.textContent = "모두 복원";
+
+  const floorButtons = new Map();
+  for (const cut of floorCuts) {
+    const button = document.createElement("button");
+    button.className = "btn";
+    button.type = "button";
+    button.textContent = cut.label;
+    button.addEventListener("click", () => {
+      floorCut = cut;
+      viewer.controls.state.actions++;
+      applyHiding();
+    });
+    floorButtons.set(cut.id, button);
+    floorList.appendChild(button);
+  }
+  const wallButtons = new Map();
+  for (const [key, group] of Object.entries(wallGroups)) {
+    const button = document.createElement("button");
+    button.className = "btn";
+    button.type = "button";
+    button.textContent = `${group.label} 숨기기`;
+    button.addEventListener("click", () => {
+      if (hiddenWalls.has(key)) hiddenWalls.delete(key);
+      else hiddenWalls.add(key);
+      viewer.controls.state.actions++;
+      applyHiding();
+    });
+    wallButtons.set(key, button);
+    wallList.appendChild(button);
+  }
+  restoreButton.addEventListener("click", () => {
+    floorCut = floorCuts[0];
+    hiddenWalls.clear();
+    viewer.controls.state.actions++;
+    applyHiding();
+  });
+
+  function updateHideStatus() {
+    const parts = [];
+    if (floorCut.id !== "all") parts.push(`${floorCut.label} 보기(위층 숨김)`);
+    for (const key of hiddenWalls) parts.push(wallGroups[key].label);
+    hideStatus.textContent =
+      parts.length === 0
+        ? "숨긴 부분: 없음"
+        : `⚠ 숨긴 부분: ${parts.join(" · ")} — '모두 복원'으로 되돌립니다.`;
+    for (const [id, button] of floorButtons)
+      button.setAttribute("aria-pressed", String(id === floorCut.id));
+    for (const [key, button] of wallButtons) {
+      button.setAttribute("aria-pressed", String(hiddenWalls.has(key)));
+      button.textContent = `${wallGroups[key].label} ${hiddenWalls.has(key) ? "보이기" : "숨기기"}`;
+    }
+    restoreButton.disabled = parts.length === 0;
+  }
+  applyHiding();
+
   section.append(
     heading,
     current,
@@ -367,6 +481,11 @@
     comparisonStatus,
     comparisonHint,
     comparisonList,
+    hideHeading,
+    hideStatus,
+    floorList,
+    wallList,
+    restoreButton,
   );
   host.appendChild(section);
   viewport.appendChild(guides);
