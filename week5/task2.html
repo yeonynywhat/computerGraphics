@@ -422,7 +422,7 @@ void main() {
       /* ══════════════════════════════════════════════════════════════════════════
    6. 마우스로 도는 카메라
    ══════════════════════════════════════════════════════════════════════════ */
-      const cam = { yaw: 0.6, pitch: 0.42, dist: 19 };
+      const cam = { yaw: 0.6, pitch: 0.22, dist: 10 }; // 낮은 눈높이에서 지평선 쪽 해를 함께 보도록
       let dragging = false,
         lastX = 0,
         lastY = 0;
@@ -476,10 +476,10 @@ void main() {
       /* ══════════════════════════════════════════════════════════════════════════
    7. 매 프레임 그린다
    ══════════════════════════════════════════════════════════════════════════ */
-      const pointLightPos = [1.8, 1.2, -0.5];
-      const pointLightColor = [1.6, 0.65, 0.25];
-      const skyLightDir = [-0.4, 0.8, -0.5];
-      const skyLightColor = [0.12, 0.2, 0.35];
+      const pointLightPos = [-4.5, 1.2, 3.0]; // 화면 왼쪽 지평선 근처의 낮은 해 → 물체의 왼쪽 면만 붉게 물든다
+      const pointLightColor = [2.2, 0.85, 0.3]; // 멀리 있어 감쇠되므로 1보다 크게
+      const skyLightDir = [0.2, 1.0, 0.3]; // 하늘 전체에서 내려오는 빛 → 윗면이 푸르게
+      const skyLightColor = [0.22, 0.32, 0.6]; // 0.12~0.35는 너무 약해 켜고 꺼도 차이가 잘 안 보였다
 
       // 물체 하나를 그리는 함수. 모델 행렬과 재질만 바꿔 여러 번 부른다.
       function draw(mesh, model, color, shininess, ks, emissive) {
@@ -503,7 +503,7 @@ void main() {
         }
         gl.viewport(0, 0, canvas.width, canvas.height);
 
-        gl.clearColor(0.04, 0.06, 0.1, 1.0);
+        gl.clearColor(0.09, 0.08, 0.16, 1.0); // 해가 진 직후의 보랏빛 하늘
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // 카메라
@@ -553,7 +553,7 @@ void main() {
               pointLightPos[1],
               pointLightPos[2],
             ),
-            Mat4.scale(0.22, 0.22, 0.22),
+            Mat4.scale(0.45, 0.45, 0.45), // 지는 해로 읽히도록 크게
           );
           draw(sphere, lightMarker, [1.0, 0.42, 0.12], 1, 0.0, true);
         }

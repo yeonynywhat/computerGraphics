@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>5주차 실습 1 — 출발점</title>
+    <title>5주차 실습 1 — 납작한 원을 구로 만들기</title>
     <style>
       html,
       body {
@@ -30,11 +30,22 @@
           Consolas,
           monospace;
       }
+      #state {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        margin: 0;
+        color: #e8eefa;
+        font: 13px/1.6 ui-monospace, Menlo, Consolas, monospace;
+        text-shadow: 0 1px 3px #000;
+      }
     </style>
   </head>
   <body>
     <canvas id="glcanvas"></canvas>
-    <p id="hint">드래그 = 시점 회전 · 휠 = 확대/축소</p>
+    <pre id="state"></pre>
+    <p id="hint">드래그 = 시점 회전 · 휠 = 확대/축소<br />
+      1~4 = 단계 · X = max 제거 · [ ] = ambient · L = 광원 종류 · S = 비균등 스케일 · N = 법선 행렬 · R = 처음 상태</p>
 
     <script>
       /* ============================================================================
@@ -107,7 +118,8 @@ layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNormal;
 
 uniform mat4 uModel, uView, uProj;
-uniform mat3 uNormalMat;              // 지금은 쓰지 않는다 — ★ 단계 5
+uniform mat3 uNormalMat;              // 법선 행렬 = 모델 행렬 3×3 부분의 역전치 — ★ 단계 5
+uniform bool uUseNormalMat;           // N 키: 비교용으로 mat3(uModel)과 바꿔 볼 수 있다
 
 out vec3 vWorldPos;                   // 이 픽셀이 세계 어디에 있는가
 out vec3 vNormal;                     // 이 픽셀의 표면이 어디를 향하는가
@@ -116,8 +128,8 @@ void main() {
   vec4 world = uModel * vec4(aPos, 1.0);
   vWorldPos  = world.xyz;
 
-  // ★ 단계 5 — 아래 한 줄을  vNormal = uNormalMat * aNormal;  로 바꾼다
-  vNormal = uNormalMat * aNormal;
+  // ★ 단계 5 — 비균등 스케일에서는 법선 행렬을 써야 법선이 표면에 수직으로 남는다
+  vNormal = uUseNormalMat ? uNormalMat * aNormal : mat3(uModel) * aNormal;
 
   gl_Position = uProj * uView * world;
 }
@@ -142,6 +154,12 @@ uniform vec3  uViewPos;               // 카메라의 세계 좌표
 uniform float uShininess;
 uniform bool  uEmissive;              // 태양처럼 스스로 빛나는 물체인가
 
+uniform int   uStage;                 // 1 확산광 · 2 +환경광 · 3 +정반사 · 4 +감쇠
+uniform int   uLightType;             // 0 point · 1 directional · 2 spot
+uniform vec3  uDirLight;              // directional 일 때 빛이 오는 방향
+uniform bool  uNoMax;                 // X 키: max(...,0) 을 지운 실험
+uniform float uKa;                    // 환경광 세기 ([ ] 키)
+
 out vec4 fragColor;
 
 void main() {
@@ -150,42 +168,42 @@ void main() {
     return;
   }
 
-  vec3 N = normalize(vNormal);                    // 표면이 향하는 방향
-  vec3 delta = uLightPos - vWorldPos;
-  float dist = length(delta);
-  vec3 L = normalize(delta);
-  vec3 V = normalize(uViewPos  - vWorldPos);      // 눈 쪽 방향
+  vec3 N = normalize(vNormal);                    // 보간된 법선은 길이가 1이 아니므로 다시 정규화
+  vec3 V = normalize(uViewPos - vWorldPos);       // 눈 쪽 방향
 
-  float c = dot(-L, normalize(uSpotDir));
-  float spot = clamp(
-      (c - uCosOuter) / (uCosInner - uCosOuter),
-      0.0, 1.0
-  );
-  float att = 1.0 / (1.0 + 0.02 * dist * dist);
+  // ── 광원 종류의 차이 = L 을 어떻게 구하나 + 감쇠가 있나
+  vec3 L;
+  float att = 1.0;
+  float spot = 1.0;
+  if (uLightType == 1) {
+    L = normalize(uDirLight);                     // directional: 모든 픽셀에서 같은 방향, 감쇠 없음
+  } else {
+    vec3 delta = uLightPos - vWorldPos;
+    float d = length(delta);
+    L = normalize(delta);                         // point/spot: 픽셀마다 방향이 다르다
+    if (uStage >= 4) att = 1.0 / (1.0 + 0.02 * d * d);   // ★ 단계 4 — 거리 감쇠
+    if (uLightType == 2) {                        // spot: 원뿔 밖을 cos 값 비교로 잘라 낸다 (acos 없음)
+      float c = dot(-L, normalize(uSpotDir));
+      spot = clamp((c - uCosOuter) / (uCosInner - uCosOuter), 0.0, 1.0);
+    }
+  }
 
-  // ──────────────────────────────────────────────────────────────────────
-  //  ★ 단계 1~4 — 아래에 세 항을 하나씩 더해 갑니다.
-  //
-  //   단계 1 (확산광)  vec3 diffuse = max(dot(N, L), 0.0) * uBaseColor * uLightColor;
-  //   단계 2 (환경광)  vec3 ambient = 0.08 * uBaseColor;
-  //   단계 3 (정반사)  vec3 R = reflect(-L, N);
-  //                    vec3 specular = pow(max(dot(R, V), 0.0), uShininess) * uLightColor * 0.5;
-  //   단계 4 (감쇠)    float d = length(uLightPos - vWorldPos);
-  //                    float att = 1.0 / (1.0 + 0.02 * d * d);
-  //
-  //  그리고 아래 한 줄을  fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
-  //  처럼 바꿉니다.
-  // ──────────────────────────────────────────────────────────────────────
+  // ★ 단계 1 — 확산광: 람베르트 코사인 법칙. 보는 방향(V)과 무관하다.
+  float NdotL = dot(N, L);
+  float lambert = uNoMax ? NdotL : max(NdotL, 0.0);
+  vec3 diffuse = lambert * uBaseColor * uLightColor;
 
-  vec3 diffuse = max(dot(N, L), 0.0) * uBaseColor * uLightColor;
-  vec3 ambient = 0.08 * uBaseColor;
-  vec3 R = reflect(-L, N);
-  vec3 specular = pow(max(dot(R, V), 0.0), uShininess)
-                * uLightColor * 0.5;
-  fragColor = vec4(
-      ambient + (diffuse + specular) * att * spot,
-      1.0
-  );
+  // ★ 단계 2 — 환경광: 방향·거리와 무관하게 깔리는 빛. 감쇠를 곱하지 않는다.
+  vec3 ambient = (uStage >= 2) ? uKa * uBaseColor : vec3(0.0);
+
+  // ★ 단계 3 — 정반사: R·V 의 거듭제곱. 물체색이 아니라 광원색을 쓴다.
+  vec3 specular = vec3(0.0);
+  if (uStage >= 3 && NdotL > 0.0) {               // 빛을 등진 면에는 하이라이트를 만들지 않는다
+    vec3 R = reflect(-L, N);                      // reflect 는 입사 벡터를 받으므로 -L
+    specular = pow(max(dot(R, V), 0.0), uShininess) * uLightColor * 0.5;
+  }
+
+  fragColor = vec4(ambient + (diffuse + specular) * att * spot, 1.0);
 }
 `;
 
@@ -374,6 +392,12 @@ void main() {
         "uViewPos",
         "uShininess",
         "uEmissive",
+        "uUseNormalMat",
+        "uStage",
+        "uLightType",
+        "uDirLight",
+        "uNoMax",
+        "uKa",
       ].forEach(function (n) {
         U[n] = gl.getUniformLocation(program, n);
       });
@@ -406,6 +430,50 @@ void main() {
    6. 마우스로 도는 카메라
    ══════════════════════════════════════════════════════════════════════════ */
       const cam = { yaw: 0.6, pitch: 0.42, dist: 11 };
+
+      // ── 실험 상태: 키로 바꿔 가며 단계별 결과를 같은 각도에서 비교한다
+      const DEFAULTS = {
+        stage: 4, noMax: false, ka: 0.08, lightType: 0,
+        nonUniform: true, useNormalMat: true,
+      };
+      const S = { ...DEFAULTS };
+      const LIGHT_NAMES = ["point", "directional", "spot"];
+      const STAGE_NAMES = ["", "확산광", "+환경광", "+정반사", "+거리 감쇠"];
+      const stateBox = document.getElementById("state");
+      function showState() {
+        stateBox.textContent =
+          `단계 ${S.stage} (${STAGE_NAMES[S.stage]})` +
+          (S.noMax ? "  ⚠ max 제거" : "") +
+          `\nambient ${S.ka.toFixed(2)} · 광원 ${LIGHT_NAMES[S.lightType]}` +
+          `\n행성 스케일 ${S.nonUniform ? "비균등 (0.7, 2.2, 0.7)" : "균등 (1.1)"}` +
+          ` · 법선 ${S.useNormalMat ? "uNormalMat" : "mat3(uModel)"}`;
+      }
+      window.addEventListener("keydown", function (e) {
+        const k = e.key.toLowerCase();
+        if (["1", "2", "3", "4"].includes(k)) S.stage = Number(k);
+        else if (k === "x") S.noMax = !S.noMax;
+        else if (k === "[") S.ka = Math.max(0, +(S.ka - 0.04).toFixed(2));
+        else if (k === "]") S.ka = Math.min(0.4, +(S.ka + 0.04).toFixed(2));
+        else if (k === "l") S.lightType = (S.lightType + 1) % 3;
+        else if (k === "s") S.nonUniform = !S.nonUniform;
+        else if (k === "n") S.useNormalMat = !S.useNormalMat;
+        else if (k === "r") Object.assign(S, DEFAULTS);
+        else return;
+        showState();
+      });
+      // 캡처용: 주소 뒤 ?stage=1&light=1 처럼 처음 상태를 정할 수 있다
+      (function readQuery() {
+        const q = new URLSearchParams(location.search);
+        if (q.has("stage")) S.stage = Number(q.get("stage"));
+        if (q.has("nomax")) S.noMax = q.get("nomax") === "1";
+        if (q.has("ka")) S.ka = Number(q.get("ka"));
+        if (q.has("light")) S.lightType = Number(q.get("light"));
+        if (q.has("uniform")) S.nonUniform = q.get("uniform") !== "1";
+        if (q.has("normalmat")) S.useNormalMat = q.get("normalmat") === "1";
+        if (q.has("yaw")) cam.yaw = Number(q.get("yaw"));
+        if (q.has("t")) window.FIXED_TIME = Number(q.get("t"));
+      })();
+      showState();
       let dragging = false,
         lastX = 0,
         lastY = 0;
@@ -484,7 +552,7 @@ void main() {
         gl.clearColor(0.04, 0.06, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        const t = (performance.now() - startTime) / 1000;
+        const t = window.FIXED_TIME ?? (performance.now() - startTime) / 1000;
 
         // 카메라
         const cp = Math.cos(cam.pitch),
@@ -510,14 +578,23 @@ void main() {
         gl.uniform3fv(U.uSpotDir, spotDir);
         gl.uniform1f(U.uCosInner, cosInner);
         gl.uniform1f(U.uCosOuter, cosOuter);
-        gl.uniform3fv(U.uViewPos, eye);
+        gl.uniform3fv(U.uViewPos, eye);       // 정반사는 보는 방향에 의존하므로 매 프레임 넘긴다
+        gl.uniform1i(U.uStage, S.stage);
+        gl.uniform1i(U.uLightType, S.lightType);
+        gl.uniform3f(U.uDirLight, 0.4, 0.8, 0.5);
+        gl.uniform1i(U.uNoMax, S.noMax ? 1 : 0);
+        gl.uniform1f(U.uKa, S.ka);
+        gl.uniform1i(U.uUseNormalMat, S.useNormalMat ? 1 : 0);
 
         // 바닥
         draw(plane, Mat4.identity(), [0.32, 0.34, 0.4], 8, false);
 
         // 행성 — 가운데에 떠서 돈다
         let m = Mat4.multiply(Mat4.translate(0, 1.6, 0), Mat4.rotateY(t * 0.3));
-        m = Mat4.multiply(m, Mat4.scale(0.7, 2.2, 0.7));
+        m = Mat4.multiply(
+          m,
+          S.nonUniform ? Mat4.scale(0.7, 2.2, 0.7) : Mat4.scale(1.1, 1.1, 1.1),
+        );
         draw(sphere, m, [0.8, 0.42, 0.32], 32, false);
 
         // 달 — 행성 둘레를 돈다
@@ -534,7 +611,7 @@ void main() {
           Mat4.translate(lightPos[0], lightPos[1], lightPos[2]),
           Mat4.scale(0.22, 0.22, 0.22),
         );
-        draw(sphere, ml, [1.0, 0.93, 0.62], 1, true);
+        if (S.lightType !== 1) draw(sphere, ml, [1.0, 0.93, 0.62], 1, true); // directional 은 위치가 없다
 
         gl.bindVertexArray(null);
         requestAnimationFrame(render);
